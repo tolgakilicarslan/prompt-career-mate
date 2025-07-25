@@ -14,7 +14,223 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          ai_analysis: Json | null
+          cover_letter_id: string | null
+          created_at: string
+          document_id: string | null
+          id: string
+          job_id: string
+          match_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          cover_letter_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          job_id: string
+          match_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          cover_letter_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          job_id?: string
+          match_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_cover_letter_id_fkey"
+            columns: ["cover_letter_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          content: string | null
+          created_at: string
+          file_url: string | null
+          id: string
+          is_current: boolean
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          is_current?: boolean
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          is_current?: boolean
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          applied_date: string | null
+          company: string
+          created_at: string
+          description: string | null
+          id: string
+          job_url: string | null
+          location: string | null
+          notes: string | null
+          salary_range: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_date?: string | null
+          company: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_url?: string | null
+          location?: string | null
+          notes?: string | null
+          salary_range?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_date?: string | null
+          company?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_url?: string | null
+          location?: string | null
+          notes?: string | null
+          salary_range?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saved_jobs: {
+        Row: {
+          company: string
+          created_at: string
+          description: string | null
+          external_job_id: string | null
+          id: string
+          job_url: string | null
+          location: string | null
+          salary_range: string | null
+          source: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          description?: string | null
+          external_job_id?: string | null
+          id?: string
+          job_url?: string | null
+          location?: string | null
+          salary_range?: string | null
+          source: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          description?: string | null
+          external_job_id?: string | null
+          id?: string
+          job_url?: string | null
+          location?: string | null
+          salary_range?: string | null
+          source?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
