@@ -1,7 +1,8 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
-import { Bell, User } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ProfileDropdown } from "@/components/ProfileDropdown"
+import { NotificationDropdown } from "@/components/NotificationDropdown"
+import logo from "@/assets/logo.png"
 
 interface LayoutProps {
   children: React.ReactNode
@@ -19,19 +20,17 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center justify-between h-full px-6">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="hover:bg-accent rounded-md p-2" />
-                <div className="text-sm text-muted-foreground">
-                  Welcome to your AI-powered career assistant
+                <div className="flex items-center gap-3">
+                  <img src={logo} alt="AI Career Assistant" className="w-8 h-8" />
+                  <div className="text-sm text-muted-foreground">
+                    Welcome to your AI-powered career assistant
+                  </div>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <User className="w-4 h-4" />
-                </Button>
+                <NotificationDropdown />
+                <ProfileDropdown />
               </div>
             </div>
           </header>

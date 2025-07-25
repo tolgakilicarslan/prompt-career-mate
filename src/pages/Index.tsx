@@ -1,10 +1,14 @@
 import { Layout } from "@/components/Layout"
 import { StatCard } from "@/components/StatCard"
 import { JobCard } from "@/components/JobCard"
-import { AIChat } from "@/components/AIChat"
+import { EnhancedAIChat } from "@/components/EnhancedAIChat"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useJobs } from "@/hooks/useJobs"
+import { useDocuments } from "@/hooks/useDocuments"
+import { useApplications } from "@/hooks/useApplications"
+import { useNavigate } from "react-router-dom"
 import { 
   Briefcase, 
   FileText, 
@@ -18,39 +22,49 @@ import {
 } from "lucide-react"
 
 const Index = () => {
-  // Sample data
+  const navigate = useNavigate()
+  const { jobs } = useJobs()
+  const { documents } = useDocuments()
+  const { applications } = useApplications()
+
+  // Calculate real stats
+  const recentApplications = applications.slice(0, 3)
+  const avgMatchScore = applications.length > 0 
+    ? Math.round(applications.filter(a => a.match_score).reduce((acc, a) => acc + (a.match_score || 0), 0) / applications.filter(a => a.match_score).length) || 0
+    : 0
+
   const stats = [
     {
       title: "Applications Sent",
-      value: "12",
-      description: "This month",
+      value: applications.length.toString(),
+      description: "Total applications",
       icon: Briefcase,
       trend: "up" as const,
-      trendValue: "+3"
+      trendValue: recentApplications.length > 0 ? `+${recentApplications.length} recent` : "0 recent"
     },
     {
       title: "Resume Match Score",
-      value: "87%",
+      value: avgMatchScore > 0 ? `${avgMatchScore}%` : "N/A",
       description: "Average across jobs",
       icon: Target,
-      trend: "up" as const,
-      trendValue: "+12%"
+      trend: avgMatchScore >= 70 ? "up" as const : avgMatchScore >= 50 ? "neutral" as const : "down" as const,
+      trendValue: avgMatchScore > 0 ? "Calculated" : "Upload documents"
     },
     {
       title: "Documents",
-      value: "6",
+      value: documents.length.toString(),
       description: "Resumes & Cover Letters",
       icon: FileText,
       trend: "neutral" as const,
-      trendValue: "2 new"
+      trendValue: documents.filter(d => d.type === "resume").length + " resumes"
     },
     {
-      title: "Interview Rate",
-      value: "25%",
-      description: "From applications",
+      title: "Saved Jobs",
+      value: jobs.length.toString(),
+      description: "Total saved",
       icon: TrendingUp,
       trend: "up" as const,
-      trendValue: "+8%"
+      trendValue: jobs.filter(j => j.status === "applied").length + " applied"
     }
   ]
 
@@ -94,21 +108,21 @@ const Index = () => {
       title: "Upload Resume",
       description: "Add a new resume version",
       icon: Upload,
-      action: "/upload-resume",
+      action: () => navigate("/documents"),
       color: "bg-blue-500"
     },
     {
       title: "Find Jobs",
       description: "Search for new opportunities",
       icon: Search,
-      action: "/job-search",
+      action: () => navigate("/job-search"),
       color: "bg-green-500"
     },
     {
       title: "AI Analysis",
       description: "Optimize your documents",
       icon: Brain,
-      action: "/ai-assistant",
+      action: () => navigate("/ai-assistant"),
       color: "bg-purple-500"
     }
   ]
@@ -124,7 +138,7 @@ const Index = () => {
               Track your job search progress and optimize your applications with AI
             </p>
           </div>
-          <Button variant="gradient" size="lg">
+          <Button variant="gradient" size="lg" onClick={() => navigate("/job-tracker")}>
             <Plus className="w-4 h-4 mr-2" />
             New Application
           </Button>
@@ -152,6 +166,7 @@ const Index = () => {
                   <Button
                     key={index}
                     variant="outline"
+                    onClick={action.action}
                     className="h-auto p-4 flex flex-col items-center gap-3 hover:shadow-[var(--shadow-elegant)]"
                   >
                     <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center`}>
@@ -173,7 +188,7 @@ const Index = () => {
                   <Briefcase className="w-5 h-5 text-primary" />
                   Recent Job Applications
                 </h2>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => navigate("/job-tracker")}>
                   View All
                 </Button>
               </div>
@@ -187,7 +202,7 @@ const Index = () => {
 
           {/* Right Column - AI Chat */}
           <div className="space-y-6">
-            <AIChat />
+            <EnhancedAIChat />
             
             {/* Recent Documents */}
             <Card className="card-elegant p-6">
@@ -196,21 +211,33 @@ const Index = () => {
                 Recent Documents
               </h3>
               <div className="space-y-3">
-                {[
-                  { name: "Senior_Dev_Resume_v3.docx", date: "2 hours ago", type: "Resume" },
-                  { name: "TechCorp_Cover_Letter.docx", date: "1 day ago", type: "Cover Letter" },
-                  { name: "Product_Manager_Resume.docx", date: "3 days ago", type: "Resume" }
-                ].map((doc, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium">{doc.name}</p>
-                      <p className="text-xs text-muted-foreground">{doc.date}</p>
+                {documents.length > 0 ? (
+                  documents.slice(0, 3).map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">{doc.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {doc.type === "resume" ? "Resume" : "Cover Letter"}
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {doc.type}
-                    </Badge>
+                  ))
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">No documents yet</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => navigate("/documents")}
+                    >
+                      Upload First Document
+                    </Button>
                   </div>
-                ))}
+                )}
               </div>
             </Card>
           </div>

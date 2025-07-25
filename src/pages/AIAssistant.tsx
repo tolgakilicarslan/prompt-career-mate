@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Layout } from "@/components/Layout"
-import { AIChat } from "@/components/AIChat"
+import { EnhancedAIChat } from "@/components/EnhancedAIChat"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -278,7 +278,7 @@ Preferred Qualifications:
 
           {/* Right Column - AI Chat */}
           <div className="space-y-6">
-            <AIChat isOpen={true} />
+            <EnhancedAIChat isOpen={true} />
             
             {/* Quick Tips */}
             <Card className="card-elegant p-6">
