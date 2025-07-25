@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Layout } from "@/components/Layout"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -6,6 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { useToast } from "@/hooks/use-toast"
+import { useDocuments } from "@/hooks/useDocuments"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
 import { 
   Upload, 
   FileText, 
@@ -19,71 +23,68 @@ import {
   Search
 } from "lucide-react"
 
-interface Document {
-  id: string
-  name: string
-  type: "resume" | "cover-letter"
-  createdDate: string
-  lastModified: string
-  fileSize: string
-  matchScore?: number
-  usageCount: number
-  isStarred: boolean
-}
-
 const Documents = () => {
-  const [documents] = useState<Document[]>([
-    {
-      id: "1",
-      name: "Senior_Developer_Resume_v3.docx",
-      type: "resume",
-      createdDate: "2024-01-15",
-      lastModified: "2024-01-16",
-      fileSize: "125 KB",
-      matchScore: 87,
-      usageCount: 5,
-      isStarred: true
-    },
-    {
-      id: "2",
-      name: "Product_Manager_Resume.docx",
-      type: "resume",
-      createdDate: "2024-01-10",
-      lastModified: "2024-01-12",
-      fileSize: "118 KB",
-      matchScore: 73,
-      usageCount: 2,
-      isStarred: false
-    },
-    {
-      id: "3",
-      name: "TechCorp_Cover_Letter.docx",
-      type: "cover-letter",
-      createdDate: "2024-01-14",
-      lastModified: "2024-01-14",
-      fileSize: "92 KB",
-      matchScore: 91,
-      usageCount: 1,
-      isStarred: true
-    },
-    {
-      id: "4",
-      name: "Generic_Cover_Letter.docx",
-      type: "cover-letter",
-      createdDate: "2024-01-08",
-      lastModified: "2024-01-09",
-      fileSize: "85 KB",
-      matchScore: 65,
-      usageCount: 3,
-      isStarred: false
-    }
-  ])
-
+  const { documents, isLoading, createDocument, deleteDocument } = useDocuments()
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTab, setSelectedTab] = useState("all")
+  const [uploading, setUploading] = useState(false)
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: "resume" | "cover-letter") => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    setUploading(true)
+    try {
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName)
+
+      // Create document record
+      await createDocument({
+        title: file.name.split('.')[0],
+        type: type,
+        content: null,
+        file_url: urlData.publicUrl,
+        version: 1,
+        is_current: true
+      })
+
+      toast({
+        title: "Success",
+        description: `${type === 'resume' ? 'Resume' : 'Cover letter'} uploaded successfully!`,
+      })
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      toast({
+        title: "Error",
+        description: "Failed to upload file. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesTab = selectedTab === "all" || doc.type === selectedTab
     return matchesSearch && matchesTab
   })
@@ -94,14 +95,7 @@ const Documents = () => {
       : "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
   }
 
-  const getMatchScoreColor = (score?: number) => {
-    if (!score) return "text-muted-foreground"
-    if (score >= 80) return "text-green-600"
-    if (score >= 60) return "text-yellow-600"
-    return "text-red-600"
-  }
-
-  const DocumentCard = ({ doc }: { doc: Document }) => (
+  const DocumentCard = ({ doc }: { doc: any }) => (
     <Card className="card-elegant p-6 hover:shadow-[var(--shadow-glow)] transition-[var(--transition-smooth)]">
       <div className="space-y-4">
         {/* Header */}
@@ -111,60 +105,62 @@ const Documents = () => {
               <FileText className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">{doc.name}</h3>
-              <p className="text-sm text-muted-foreground">{doc.fileSize}</p>
+              <h3 className="font-semibold text-foreground">{doc.title}</h3>
+              <p className="text-sm text-muted-foreground">
+                {new Date(doc.created_at).toLocaleDateString()}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {doc.isStarred && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
             <Badge className={getTypeColor(doc.type)}>
               {doc.type === "resume" ? "Resume" : "Cover Letter"}
             </Badge>
           </div>
         </div>
 
-        {/* Match Score */}
-        {doc.matchScore && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium flex items-center gap-1">
-                <Target className="w-4 h-4" />
-                Match Score
-              </span>
-              <span className={`text-sm font-bold ${getMatchScoreColor(doc.matchScore)}`}>
-                {doc.matchScore}%
-              </span>
-            </div>
-            <Progress value={doc.matchScore} className="h-2" />
-          </div>
-        )}
-
         {/* Metadata */}
         <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
-            <span>Created {new Date(doc.createdDate).toLocaleDateString()}</span>
+            <span>Version {doc.version}</span>
           </div>
           <div>
-            Used in {doc.usageCount} applications
+            {doc.is_current ? "Current version" : "Archived"}
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-2">
-          <Button size="sm" variant="default">
-            <Eye className="w-4 h-4 mr-1" />
-            View
-          </Button>
-          <Button size="sm" variant="outline">
-            <Edit className="w-4 h-4 mr-1" />
-            Edit
-          </Button>
-          <Button size="sm" variant="outline">
-            <Download className="w-4 h-4 mr-1" />
-            Download
-          </Button>
-          <Button size="sm" variant="ghost">
+          {doc.file_url && (
+            <Button 
+              size="sm" 
+              variant="default"
+              onClick={() => window.open(doc.file_url!, '_blank')}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              View
+            </Button>
+          )}
+          {doc.file_url && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => {
+                const link = document.createElement('a')
+                link.href = doc.file_url!
+                link.download = doc.title
+                link.click()
+              }}
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </Button>
+          )}
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => deleteDocument(doc.id)}
+          >
             <Trash2 className="w-4 h-4 mr-1" />
             Delete
           </Button>
@@ -185,13 +181,37 @@ const Documents = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="lg">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => handleFileUpload(e, "resume")}
+              className="hidden"
+            />
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
               <Upload className="w-4 h-4 mr-2" />
-              Upload Resume
+              {uploading ? "Uploading..." : "Upload Resume"}
             </Button>
-            <Button variant="gradient" size="lg">
+            <Button 
+              variant="gradient" 
+              size="lg"
+              onClick={() => {
+                // Create a new input for cover letter
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.accept = '.pdf,.doc,.docx'
+                input.onchange = (e) => handleFileUpload(e as any, 'cover-letter')
+                input.click()
+              }}
+              disabled={uploading}
+            >
               <Upload className="w-4 h-4 mr-2" />
-              Upload Cover Letter
+              {uploading ? "Uploading..." : "Upload Cover Letter"}
             </Button>
           </div>
         </div>
@@ -231,8 +251,8 @@ const Documents = () => {
               icon: FileText
             },
             { 
-              label: "Avg Match Score", 
-              value: Math.round(documents.reduce((acc, doc) => acc + (doc.matchScore || 0), 0) / documents.length) + "%", 
+              label: "Current Version", 
+              value: documents.filter(d => d.is_current).length, 
               color: "text-yellow-600",
               icon: Target
             }
@@ -258,7 +278,12 @@ const Documents = () => {
           </TabsList>
 
           <TabsContent value={selectedTab} className="space-y-4">
-            {filteredDocuments.length > 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading documents...</p>
+              </div>
+            ) : filteredDocuments.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredDocuments.map((doc) => (
                   <DocumentCard key={doc.id} doc={doc} />
@@ -273,9 +298,13 @@ const Documents = () => {
                 <p className="text-muted-foreground mb-4">
                   {searchTerm ? "Try adjusting your search term" : "Upload your first document to get started"}
                 </p>
-                <Button variant="default">
+                <Button 
+                  variant="default"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
                   <Upload className="w-4 h-4 mr-2" />
-                  Upload Document
+                  {uploading ? "Uploading..." : "Upload Document"}
                 </Button>
               </div>
             )}

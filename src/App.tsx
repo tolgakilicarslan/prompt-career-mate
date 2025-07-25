@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import JobSearch from "./pages/JobSearch";
 import JobTracker from "./pages/JobTracker";
 import Documents from "./pages/Documents";
+import UploadResume from "./pages/UploadResume";
+import UploadCoverLetter from "./pages/UploadCoverLetter";
 import AIAssistant from "./pages/AIAssistant";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -35,6 +37,8 @@ function ProtectedRoutes() {
       <Route path="/job-search" element={<JobSearch />} />
       <Route path="/job-tracker" element={<JobTracker />} />
       <Route path="/documents" element={<Documents />} />
+      <Route path="/upload-resume" element={<UploadResume />} />
+      <Route path="/upload-cover-letter" element={<UploadCoverLetter />} />
       <Route path="/ai-assistant" element={<AIAssistant />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
