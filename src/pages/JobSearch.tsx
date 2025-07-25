@@ -7,62 +7,64 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, MapPin, Briefcase, Filter, Loader2 } from "lucide-react"
+import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 const JobSearch = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [location, setLocation] = useState("")
   const [jobType, setJobType] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [jobs, setJobs] = useState([
-    {
-      id: "1",
-      title: "Senior React Developer",
-      company: "Meta",
-      location: "Menlo Park, CA",
-      salary: "$150k - $200k",
-      type: "Full-time",
-      postedDate: "1 day ago",
-      description: "Join our frontend team to build the next generation of social media experiences. Work with React, TypeScript, and cutting-edge web technologies."
-    },
-    {
-      id: "2",
-      title: "Product Designer",
-      company: "Google",
-      location: "Mountain View, CA",
-      salary: "$130k - $170k",
-      type: "Full-time",
-      postedDate: "2 days ago",
-      description: "Design intuitive user experiences for billions of users. Collaborate with product managers and engineers to create delightful products."
-    },
-    {
-      id: "3",
-      title: "DevOps Engineer",
-      company: "Amazon",
-      location: "Seattle, WA",
-      salary: "$140k - $180k",
-      type: "Full-time",
-      postedDate: "3 days ago",
-      description: "Build and maintain scalable infrastructure for AWS services. Work with containerization, CI/CD, and cloud technologies."
-    },
-    {
-      id: "4",
-      title: "Frontend Developer",
-      company: "Stripe",
-      location: "San Francisco, CA",
-      salary: "$120k - $160k",
-      type: "Full-time",
-      postedDate: "1 week ago",
-      description: "Help build the future of internet commerce. Work on React applications that handle millions of transactions daily."
-    }
-  ])
+  const [jobs, setJobs] = useState<any[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const { toast } = useToast()
 
-  const handleSearch = async () => {
+  const handleSearch = async (page = 1) => {
+    if (!searchTerm.trim()) {
+      toast({
+        title: "Please enter a search term",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('search-jobs', {
+        body: {
+          query: searchTerm,
+          location: location || undefined,
+          jobType: jobType || undefined,
+          page
+        }
+      })
+
+      if (error) throw error
+
+      if (page === 1) {
+        setJobs(data.jobs || [])
+      } else {
+        setJobs(prev => [...prev, ...(data.jobs || [])])
+      }
+      
+      setCurrentPage(page)
+      setHasMore(data.hasMore || false)
+      
+      toast({
+        title: "Search completed",
+        description: `Found ${data.jobs?.length || 0} jobs`
+      })
+    } catch (error) {
+      console.error('Search error:', error)
+      toast({
+        title: "Search failed",
+        description: "Please try again later",
+        variant: "destructive"
+      })
+    } finally {
       setIsLoading(false)
-      // In a real app, this would make an API call to job search services
-    }, 2000)
+    }
   }
 
   const handleSaveJob = (jobId: string) => {
@@ -134,7 +136,7 @@ const JobSearch = () => {
             
             <div className="flex items-center gap-3">
               <Button 
-                onClick={handleSearch} 
+                onClick={() => handleSearch()} 
                 disabled={isLoading}
                 variant="default"
                 size="lg"
@@ -237,11 +239,27 @@ const JobSearch = () => {
             </div>
 
             {/* Load More */}
-            <div className="text-center pt-6">
-              <Button variant="outline" size="lg">
-                Load More Jobs
-              </Button>
-            </div>
+            {hasMore && jobs.length > 0 && (
+              <div className="text-center pt-6">
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => handleSearch(currentPage + 1)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Load More Jobs
+                </Button>
+              </div>
+            )}
+
+            {jobs.length === 0 && !isLoading && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  Use the search bar above to find job opportunities
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

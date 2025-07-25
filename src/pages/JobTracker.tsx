@@ -1,10 +1,16 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Layout } from "@/components/Layout"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useJobs } from "@/hooks/useJobs"
+import { useToast } from "@/hooks/use-toast"
 import { 
   Plus, 
   Search, 
@@ -15,67 +21,36 @@ import {
   DollarSign,
   ExternalLink,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Edit,
+  Trash2
 } from "lucide-react"
 
-interface Job {
-  id: string
-  title: string
-  company: string
-  location: string
-  salary?: string
-  status: "saved" | "applied" | "interviewing" | "offered" | "rejected"
-  appliedDate?: string
-  notes?: string
-  resumeVersion?: string
-  coverLetterVersion?: string
-}
-
 const JobTracker = () => {
-  const [jobs] = useState<Job[]>([
-    {
-      id: "1",
-      title: "Senior Frontend Developer",
-      company: "TechCorp Inc.",
-      location: "San Francisco, CA",
-      salary: "$120k - $150k",
-      status: "interviewing",
-      appliedDate: "2024-01-15",
-      notes: "Great culture fit, technical interview scheduled for next week",
-      resumeVersion: "Senior_Dev_Resume_v3.docx",
-      coverLetterVersion: "TechCorp_Cover_Letter.docx"
-    },
-    {
-      id: "2",
-      title: "Product Manager",
-      company: "StartupXYZ",
-      location: "Remote",
-      salary: "$110k - $140k",
-      status: "applied",
-      appliedDate: "2024-01-10",
-      notes: "Applied through LinkedIn, waiting for response",
-      resumeVersion: "Product_Manager_Resume.docx"
-    },
-    {
-      id: "3",
-      title: "Full Stack Developer",
-      company: "BigTech Corp",
-      location: "Seattle, WA",
-      salary: "$130k - $160k",
-      status: "rejected",
-      appliedDate: "2024-01-05",
-      notes: "Rejected after phone screening, feedback was good but looking for more backend experience"
-    },
-    {
-      id: "4",
-      title: "React Developer",
-      company: "Medium Startup",
-      location: "Austin, TX",
-      salary: "$90k - $120k",
-      status: "saved",
-      notes: "Interesting company, need to research more before applying"
-    }
-  ])
+  const { jobs, isLoading, createJob, updateJob, deleteJob } = useJobs()
+  const { toast } = useToast()
+  const [isAddJobDialogOpen, setIsAddJobDialogOpen] = useState(false)
+  const [editingJob, setEditingJob] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  
+  // New job form state
+  const [newJob, setNewJob] = useState({
+    title: "",
+    company: "",
+    location: "",
+    description: "",
+    job_url: "",
+    salary_range: "",
+    status: "saved" as const,
+    notes: "",
+    applied_date: null as string | null
+  })
+
+  const filteredJobs = jobs.filter(job => 
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -89,10 +64,78 @@ const JobTracker = () => {
   }
 
   const getJobsByStatus = (status: string) => {
-    return jobs.filter(job => job.status === status)
+    return filteredJobs.filter(job => job.status === status)
   }
 
-  const JobCard = ({ job }: { job: Job }) => (
+  const handleAddJob = async () => {
+    if (!newJob.title || !newJob.company) {
+      toast({
+        title: "Missing required fields",
+        description: "Please enter at least a job title and company",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      await createJob(newJob)
+      setNewJob({
+        title: "",
+        company: "",
+        location: "",
+        description: "",
+        job_url: "",
+        salary_range: "",
+        status: "saved",
+        notes: "",
+        applied_date: null
+      })
+      setIsAddJobDialogOpen(false)
+      toast({
+        title: "Job added successfully",
+        description: "Your job has been added to the tracker"
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to add job",
+        description: "Please try again",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleUpdateJob = async (jobId: string, updates: any) => {
+    try {
+      await updateJob(jobId, updates)
+      setEditingJob(null)
+      toast({
+        title: "Job updated successfully"
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to update job",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleDeleteJob = async (jobId: string) => {
+    if (!confirm("Are you sure you want to delete this job?")) return
+    
+    try {
+      await deleteJob(jobId)
+      toast({
+        title: "Job deleted successfully"
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to delete job",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const JobCard = ({ job }: { job: any }) => (
     <Card className="card-elegant p-6 hover:shadow-[var(--shadow-glow)] transition-[var(--transition-smooth)]">
       <div className="space-y-4">
         {/* Header */}
@@ -165,12 +208,29 @@ const JobTracker = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-3 pt-2">
-          <Button size="sm" variant="outline">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => setEditingJob(job)}
+          >
+            <Edit className="w-4 h-4 mr-1" />
             Edit
           </Button>
-          <Button size="sm" variant="ghost">
-            <ExternalLink className="w-4 h-4 mr-1" />
-            View Job
+          {job.job_url && (
+            <Button size="sm" variant="ghost" asChild>
+              <a href={job.job_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-4 h-4 mr-1" />
+                View Job
+              </a>
+            </Button>
+          )}
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => handleDeleteJob(job.id)}
+            className="text-red-600 hover:text-red-700"
+          >
+            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -188,10 +248,109 @@ const JobTracker = () => {
               Manage and track all your job applications in one place
             </p>
           </div>
-          <Button variant="gradient" size="lg">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Job
-          </Button>
+          <Dialog open={isAddJobDialogOpen} onOpenChange={setIsAddJobDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="gradient" size="lg">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Job
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Job</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title">Job Title *</Label>
+                  <Input
+                    id="title"
+                    value={newJob.title}
+                    onChange={(e) => setNewJob({...newJob, title: e.target.value})}
+                    placeholder="e.g. Senior Developer"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company">Company *</Label>
+                  <Input
+                    id="company"
+                    value={newJob.company}
+                    onChange={(e) => setNewJob({...newJob, company: e.target.value})}
+                    placeholder="e.g. TechCorp"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={newJob.location}
+                    onChange={(e) => setNewJob({...newJob, location: e.target.value})}
+                    placeholder="e.g. San Francisco, CA"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="salary">Salary Range</Label>
+                  <Input
+                    id="salary"
+                    value={newJob.salary_range}
+                    onChange={(e) => setNewJob({...newJob, salary_range: e.target.value})}
+                    placeholder="e.g. $100k - $150k"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={newJob.status} onValueChange={(value: any) => setNewJob({...newJob, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="saved">Saved</SelectItem>
+                      <SelectItem value="applied">Applied</SelectItem>
+                      <SelectItem value="interviewing">Interviewing</SelectItem>
+                      <SelectItem value="offered">Offered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="job_url">Job URL</Label>
+                  <Input
+                    id="job_url"
+                    value={newJob.job_url}
+                    onChange={(e) => setNewJob({...newJob, job_url: e.target.value})}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newJob.description}
+                    onChange={(e) => setNewJob({...newJob, description: e.target.value})}
+                    placeholder="Job description..."
+                    rows={3}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={newJob.notes}
+                    onChange={(e) => setNewJob({...newJob, notes: e.target.value})}
+                    placeholder="Personal notes about this job..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="outline" onClick={() => setIsAddJobDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddJob}>
+                  Add Job
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Search and Filters */}
@@ -199,7 +358,12 @@ const JobTracker = () => {
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input placeholder="Search jobs, companies, or notes..." className="pl-10" />
+              <Input 
+                placeholder="Search jobs, companies, or notes..." 
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             <Button variant="outline">
               <Filter className="w-4 h-4 mr-2" />
@@ -227,7 +391,7 @@ const JobTracker = () => {
         {/* Job Lists */}
         <Tabs defaultValue="all" className="space-y-6">
           <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="all">All ({jobs.length})</TabsTrigger>
+            <TabsTrigger value="all">All ({filteredJobs.length})</TabsTrigger>
             <TabsTrigger value="saved">Saved ({getJobsByStatus("saved").length})</TabsTrigger>
             <TabsTrigger value="applied">Applied ({getJobsByStatus("applied").length})</TabsTrigger>
             <TabsTrigger value="interviewing">Interviewing ({getJobsByStatus("interviewing").length})</TabsTrigger>
@@ -236,11 +400,24 @@ const JobTracker = () => {
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading jobs...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {filteredJobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+            )}
+            {!isLoading && filteredJobs.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  {searchTerm ? "No jobs match your search." : "No jobs added yet. Click 'Add Job' to get started!"}
+                </p>
+              </div>
+            )}
           </TabsContent>
 
           {["saved", "applied", "interviewing", "offered", "rejected"].map((status) => (
@@ -258,6 +435,75 @@ const JobTracker = () => {
             </TabsContent>
           ))}
         </Tabs>
+
+        {/* Edit Job Dialog */}
+        {editingJob && (
+          <Dialog open={!!editingJob} onOpenChange={() => setEditingJob(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Job</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-title">Job Title</Label>
+                  <Input
+                    id="edit-title"
+                    value={editingJob.title}
+                    onChange={(e) => setEditingJob({...editingJob, title: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-company">Company</Label>
+                  <Input
+                    id="edit-company"
+                    value={editingJob.company}
+                    onChange={(e) => setEditingJob({...editingJob, company: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select value={editingJob.status} onValueChange={(value) => setEditingJob({...editingJob, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="saved">Saved</SelectItem>
+                      <SelectItem value="applied">Applied</SelectItem>
+                      <SelectItem value="interviewing">Interviewing</SelectItem>
+                      <SelectItem value="offered">Offered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-salary">Salary Range</Label>
+                  <Input
+                    id="edit-salary"
+                    value={editingJob.salary_range || ""}
+                    onChange={(e) => setEditingJob({...editingJob, salary_range: e.target.value})}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-notes">Notes</Label>
+                  <Textarea
+                    id="edit-notes"
+                    value={editingJob.notes || ""}
+                    onChange={(e) => setEditingJob({...editingJob, notes: e.target.value})}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="outline" onClick={() => setEditingJob(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => handleUpdateJob(editingJob.id, editingJob)}>
+                  Save Changes
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </Layout>
   )
