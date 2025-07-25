@@ -8,9 +8,11 @@ import {
   Brain,
   Briefcase,
   User,
-  Settings
+  Settings,
+  LogOut
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
 import {
   Sidebar,
@@ -48,6 +50,7 @@ export function AppSidebar() {
   const location = useLocation()
   const currentPath = location.pathname
   const collapsed = state === "collapsed"
+  const { user, signOut } = useAuth()
 
   const isActive = (path: string) => currentPath === path
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -120,6 +123,18 @@ export function AppSidebar() {
           <SidebarGroup className="sidebar-section">
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
+                {/* User info */}
+                <SidebarMenuItem>
+                  <div className="flex items-center gap-3 px-3 py-2 text-sm">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    {!collapsed && (
+                      <span className="text-muted-foreground truncate text-xs">
+                        {user?.email}
+                      </span>
+                    )}
+                  </div>
+                </SidebarMenuItem>
+
                 {userItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild className="h-10">
@@ -130,6 +145,17 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+
+                {/* Sign out button */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={signOut}
+                    className="h-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {!collapsed && <span>Sign Out</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
