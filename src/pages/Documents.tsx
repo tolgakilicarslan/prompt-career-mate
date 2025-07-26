@@ -37,8 +37,32 @@ const Documents = () => {
     const file = event.target.files?.[0]
     if (!file || !user) return
 
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload a PDF, DOC, or DOCX file.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Please upload a file smaller than 10MB.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setUploading(true)
     try {
+      console.log('Starting file upload:', file.name, file.type, file.size)
+      
       // Upload file to storage
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}.${fileExt}`
@@ -47,22 +71,33 @@ const Documents = () => {
         .from('documents')
         .upload(fileName, file)
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw uploadError
+      }
+
+      console.log('File uploaded successfully:', uploadData)
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from('documents')
         .getPublicUrl(fileName)
 
+      console.log('Got public URL:', urlData.publicUrl)
+
       // Create document record
-      await createDocument({
+      const docData = {
         title: file.name.split('.')[0],
         type: type,
         content: null,
         file_url: urlData.publicUrl,
         version: 1,
         is_current: true
-      })
+      }
+
+      console.log('Creating document record:', docData)
+      
+      await createDocument(docData)
 
       toast({
         title: "Success",
@@ -72,7 +107,7 @@ const Documents = () => {
       console.error('Upload error:', error)
       toast({
         title: "Error",
-        description: "Failed to upload file. Please try again.",
+        description: error.message || "Failed to upload file. Please try again.",
         variant: "destructive",
       })
     } finally {

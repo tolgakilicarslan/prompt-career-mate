@@ -11,6 +11,7 @@ import Documents from "./pages/Documents";
 import UploadResume from "./pages/UploadResume";
 import UploadCoverLetter from "./pages/UploadCoverLetter";
 import AIAssistant from "./pages/AIAssistant";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 
@@ -40,6 +41,7 @@ function ProtectedRoutes() {
       <Route path="/upload-resume" element={<UploadResume />} />
       <Route path="/upload-cover-letter" element={<UploadCoverLetter />} />
       <Route path="/ai-assistant" element={<AIAssistant />} />
+      <Route path="/settings" element={<Settings />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>

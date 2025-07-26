@@ -95,36 +95,53 @@ export function EnhancedAIChat({ isOpen = true }: AIChatProps) {
     const hasCoverLetters = documents.filter(d => d.type === 'cover-letter').length
     const hasJobs = jobs.length
 
+    // Extract document details for smarter responses
+    const resumeDetails = documents.filter(d => d.type === 'resume').map(d => ({
+      title: d.title,
+      created: new Date(d.created_at).toLocaleDateString(),
+      current: d.is_current
+    }))
+
+    const jobDetails = jobs.map(j => ({
+      title: j.title,
+      company: j.company,
+      status: j.status,
+      applied: j.applied_date ? new Date(j.applied_date).toLocaleDateString() : null
+    }))
+
     const responses = {
       resume: hasResumes > 0 ? [
-        `I can see you have ${hasResumes} resume(s) uploaded! Here's my analysis:\n\n• Your current resume titles: ${documents.filter(d => d.type === 'resume').map(d => d.title).join(', ')}\n• Use action verbs to start each bullet point\n• Quantify your achievements with specific numbers\n• Tailor keywords to match your ${hasJobs} tracked jobs\n\nWould you like me to analyze how well your resume matches your saved jobs?`,
-        `Great! I can analyze your uploaded resume(s). Based on your ${hasJobs} job applications, here are key areas to focus on:\n\n• Professional summary aligned with your target roles\n• Skills section matching job requirements\n• Experience section with measurable impacts\n• ATS-friendly formatting for better parsing\n\nShall I compare your resume against specific job postings you're tracking?`
+        `I've analyzed your ${hasResumes} resume(s)! Here's what I found:\n\n📄 Documents:\n${resumeDetails.map(r => `• ${r.title} (${r.created})${r.current ? ' - CURRENT' : ''}`).join('\n')}\n\n💡 AI Recommendations:\n• Match content to your ${hasJobs} tracked roles\n• Optimize for ATS scanning\n• Quantify achievements with numbers\n• Update skills based on target positions\n\nWant specific feedback on any document?`,
+        `Perfect! I can see your resume portfolio:\n\n${resumeDetails.map(r => `📝 ${r.title}\n   Uploaded: ${r.created}\n   Status: ${r.current ? 'Current Version' : 'Archived'}`).join('\n\n')}\n\n🎯 Next Steps:\n• Cross-reference with your ${hasJobs} job applications\n• Identify keyword gaps\n• Enhance weak sections\n• Create targeted versions\n\nWhich resume needs optimization first?`
       ] : [
-        "I'd be happy to help you optimize your resume! Here are some key suggestions:\n\n• Use action verbs to start each bullet point\n• Quantify your achievements with specific numbers\n• Tailor keywords to match job descriptions\n• Keep it concise and focused on results\n\nUpload your resume so I can provide personalized feedback!",
-        "Great question about resume optimization! Focus on these areas:\n\n• Professional summary that highlights your unique value\n• Skills section aligned with target roles\n• Experience section with measurable impacts\n• Clean, ATS-friendly formatting\n\nUpload your resume for a detailed analysis!"
+        "I'd love to analyze your resume! Upload it and I'll provide:\n\n🔍 Detailed Content Analysis\n• Keyword optimization suggestions\n• ATS compatibility check\n• Skills gap identification\n• Achievement quantification tips\n\n📊 Match Score vs Target Roles\n• Compare against job requirements\n• Highlight missing qualifications\n• Suggest improvements\n\nReady to upload your resume?",
+        "Resume optimization is my specialty! I can help with:\n\n✨ Content Enhancement:\n• Action verbs and impact statements\n• Professional summary refinement\n• Skills section optimization\n• Experience bullet points\n\n🎯 Strategic Positioning:\n• Industry-specific customization\n• Role-targeted keywords\n• ATS-friendly formatting\n\nUpload your resume for personalized insights!"
       ],
       job: hasJobs > 0 ? [
-        `I can see you're tracking ${hasJobs} job applications! Here's how I can help:\n\n• Analyze match scores for your saved jobs\n• Compare requirements against your ${hasResumes} resume(s)\n• Suggest improvements for better alignment\n• Prioritize applications based on fit\n\nWhich of your tracked jobs would you like me to analyze first?`,
-        `Excellent! Based on your ${hasJobs} tracked jobs, I can help you:\n\n• Identify the best-fit opportunities\n• Gap analysis for missing qualifications\n• Tailor your application materials\n• Strategic application timing\n\nLet me know which job posting you'd like to focus on!`
+        `Analyzing your ${hasJobs} job applications:\n\n💼 Current Opportunities:\n${jobDetails.slice(0,3).map(j => `• ${j.title} at ${j.company}\n  Status: ${j.status}${j.applied ? ` (Applied: ${j.applied})` : ''}`).join('\n')}\n${hasJobs > 3 ? `\n...and ${hasJobs - 3} more applications` : ''}\n\n🔍 Match Analysis:\n• Resume alignment: ${hasResumes > 0 ? 'Ready for comparison' : 'Upload resume first'}\n• Application strategy insights\n• Priority ranking recommendations\n\nWhich opportunity should we focus on?`,
+        `Great job tracking ${hasJobs} applications! Here's my analysis:\n\n📈 Application Status:\n${Object.entries(jobs.reduce((acc, job) => { acc[job.status] = (acc[job.status] || 0) + 1; return acc }, {} as Record<string, number>)).map(([status, count]) => `• ${status}: ${count} ${count === 1 ? 'application' : 'applications'}`).join('\n')}\n\n🎯 AI Recommendations:\n• Prioritize by match score\n• Follow up on pending applications\n• Tailor documents for each role\n\nNeed help with any specific application?`
       ] : [
-        "Job matching is crucial for application success! Here's my approach:\n\n• Compare your skills with job requirements\n• Identify keyword gaps in your resume\n• Suggest specific improvements\n• Calculate compatibility score\n\nStart tracking jobs in the Job Tracker so I can provide personalized analysis!",
-        "Excellent! Let me help you with job analysis. I can:\n\n• Identify must-have vs nice-to-have skills\n• Suggest how to address missing qualifications\n• Recommend resume adjustments\n• Provide application strategy tips\n\nWhat specific role are you targeting?"
+        "Start tracking jobs and I'll provide:\n\n📊 Smart Analytics:\n• Application success rates\n• Response time tracking\n• Match score calculations\n• Follow-up reminders\n\n🎯 Strategic Insights:\n• Best-fit opportunity identification\n• Application timing optimization\n• Document customization suggestions\n\nAdd your first job to get started!",
+        "Job tracking unlocks powerful insights! I can help you:\n\n🔍 Opportunity Analysis:\n• Requirements vs skills comparison\n• Market positioning assessment\n• Competition analysis\n• Salary benchmarking\n\n📈 Application Strategy:\n• Priority ranking system\n• Follow-up scheduling\n• Success rate optimization\n\nReady to add some job opportunities?"
       ],
       interview: hasJobs > 0 ? [
-        `Interview prep for your ${hasJobs} applications! Here's my personalized approach:\n\n• Company research for your specific targets\n• STAR method examples from your resume\n• Practice questions tailored to your roles\n• Follow-up strategies for each application\n\nWhich company interview should we prepare for first?`,
-        `Perfect timing! With your tracked applications, I can help you:\n\n• Customize prep for each company\n• Practice role-specific questions\n• Prepare examples from your experience\n• Plan strategic follow-up approaches\n\nWhich of your ${hasJobs} applications has an upcoming interview?`
+        `Interview prep for your portfolio! Based on your applications:\n\n🎯 Company-Specific Prep:\n${jobDetails.slice(0,2).map(j => `• ${j.company} (${j.title})\n  Custom questions + research`).join('\n')}\n\n💪 STAR Method Examples:\n• From your ${hasResumes} uploaded resume(s)\n• Tailored to each role\n• Quantified achievements\n\n🗣️ Practice Areas:\n• Technical questions for your field\n• Behavioral scenarios\n• Questions to ask them\n\nWhich interview is coming up first?`,
+        `Excellent! With ${hasJobs} tracked applications, I can provide:\n\n🏢 Company Research:\n• Recent news and developments\n• Culture and values alignment\n• Interview format expectations\n• Common questions for each role\n\n📝 Preparation Materials:\n• Custom answer frameworks\n• Achievement examples from your background\n• Strategic questions to ask\n\nWhich company interview should we prepare for?`
       ] : [
-        "Interview preparation is key to success! Here's what I recommend:\n\n• Research the company thoroughly\n• Prepare STAR method examples\n• Practice common behavioral questions\n• Prepare thoughtful questions to ask\n\nStart tracking your applications so I can provide company-specific prep!",
-        "Great choice focusing on interview prep! Let me help you:\n\n• Review common questions for your field\n• Practice your elevator pitch\n• Prepare specific examples of achievements\n• Plan your follow-up strategy\n\nTell me about the role you're interviewing for!"
+        "Interview mastery starts with preparation! I can help you:\n\n🎯 General Preparation:\n• Common behavioral questions\n• STAR method examples\n• Professional storytelling\n• Confidence building techniques\n\n🏢 Company Research:\n• Industry trends analysis\n• Role-specific preparation\n• Question frameworks\n• Follow-up strategies\n\nTell me about your upcoming interview!",
+        "Let's ace that interview! My preparation includes:\n\n💼 Professional Presentation:\n• Elevator pitch refinement\n• Achievement storytelling\n• Weakness reframing\n• Salary negotiation prep\n\n🔍 Research & Strategy:\n• Company background deep-dive\n• Role requirements analysis\n• Interview format preparation\n• Post-interview follow-up\n\nWhat position are you interviewing for?"
       ],
-      general: [
-        `I'm here to help with all aspects of your job search! I can see:\n\n📄 ${hasResumes} resume(s) and ${hasCoverLetters} cover letter(s)\n💼 ${hasJobs} job applications being tracked\n\nI can now provide personalized advice on:\n• Resume optimization based on your target roles\n• Job application strategy and prioritization\n• Interview preparation for specific companies\n• Document matching and improvement suggestions\n\nWhat would you like to work on first?`,
-        `Thanks for reaching out! With access to your career data, I can help you:\n\n• Analyze and improve your ${hasResumes + hasCoverLetters} documents\n• Match your profile to your ${hasJobs} tracked opportunities\n• Provide data-driven career insights\n• Track your application progress strategically\n\nHow can I support your career goals today?`
+      analysis: hasResumes > 0 && hasJobs > 0 ? [
+        `📊 CAREER PORTFOLIO ANALYSIS\n\n📄 Documents: ${hasResumes} resume(s), ${hasCoverLetters} cover letter(s)\n💼 Applications: ${hasJobs} opportunities tracked\n\n🎯 SMART INSIGHTS:\n• Document-to-job match scores\n• Skills gap identification\n• Application success patterns\n• Optimization recommendations\n\n🚀 NEXT ACTIONS:\n• Prioritize highest-match opportunities\n• Update documents for better alignment\n• Schedule strategic follow-ups\n\nReady for detailed analysis?`,
+        `🔍 COMPREHENSIVE CAREER REVIEW\n\nYour Data:\n${resumeDetails.map(r => `📝 ${r.title}`).join('\n')}\n${jobDetails.slice(0,3).map(j => `💼 ${j.title} at ${j.company}`).join('\n')}\n\n💡 AI RECOMMENDATIONS:\n• Cross-reference documents with target roles\n• Identify highest-probability opportunities\n• Optimize application materials\n• Track engagement metrics\n\nWhat specific analysis would be most helpful?`
+      ] : [
+        `Welcome to your AI Career Assistant! 🤖\n\nCurrent Status:\n📄 Documents: ${hasResumes + hasCoverLetters} uploaded\n💼 Jobs: ${hasJobs} tracked\n\n🚀 Getting Started:\n• Upload your resume and cover letters\n• Add job opportunities you're targeting\n• Get personalized optimization advice\n• Track your application success\n\nWhat would you like to work on first?`,
+        `Ready to supercharge your job search! 🎯\n\nI can help you:\n📈 Strategic Planning:\n• Career goal alignment\n• Market opportunity analysis\n• Personal brand development\n• Application strategy optimization\n\n🔧 Tactical Execution:\n• Document optimization\n• Interview preparation\n• Follow-up management\n• Success tracking\n\nHow can I support your career goals today?`
       ]
     }
 
     const lowerMessage = userMessage.toLowerCase()
-    let responseType: keyof typeof responses = "general"
+    let responseType: keyof typeof responses = "analysis"
     
     if (lowerMessage.includes("resume") || lowerMessage.includes("cv")) {
       responseType = "resume"
@@ -142,7 +159,7 @@ export function EnhancedAIChat({ isOpen = true }: AIChatProps) {
       content: randomResponse,
       sender: "ai",
       timestamp: new Date(),
-      type: responseType === "general" ? "general" : "analysis"
+      type: "analysis"
     }
   }
 
