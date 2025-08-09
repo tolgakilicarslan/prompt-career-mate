@@ -65,3 +65,6 @@ max_frequency = 5
 
 [functions.search-jobs]
 verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false

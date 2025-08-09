@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useDocuments } from "@/hooks/useDocuments"
 import { useJobs } from "@/hooks/useJobs"
+import { supabase } from "@/integrations/supabase/client"
 
 interface Message {
   id: string
@@ -177,12 +178,43 @@ export function EnhancedAIChat({ isOpen = true }: AIChatProps) {
     setInputMessage("")
     setIsLoading(true)
 
-    // Simulate AI processing
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage)
+    try {
+      const chatMessages = [...messages, userMessage].slice(-10).map(m => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.content,
+      }))
+
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: {
+          messages: chatMessages,
+          context: {
+            documents,
+            jobs,
+          },
+        },
+      })
+
+      if (error) throw error
+
+      const aiText = (data as any)?.reply || "I'm sorry, I couldn't generate a response."
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: aiText,
+        sender: "ai",
+        timestamp: new Date(),
+        type: "analysis",
+      }
       setMessages(prev => [...prev, aiResponse])
+    } catch (err: any) {
+      console.error('AI chat error:', err)
+      toast({
+        title: "AI Error",
+        description: err?.message || "Failed to generate AI response.",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleQuickAction = (prompt: string) => {
