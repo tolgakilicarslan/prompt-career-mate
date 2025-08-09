@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Layout } from "@/components/Layout"
 import { JobCard } from "@/components/JobCard"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,25 @@ const JobSearch = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const { toast } = useToast()
+
+  useEffect(() => {
+    document.title = "Job Search | AI Career Assistant";
+    const desc = "AI-powered job search with filters and smart matching.";
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    meta.content = desc;
+    let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = "canonical";
+      document.head.appendChild(link);
+    }
+    link.href = window.location.origin + "/job-search";
+  }, []);
 
   const handleSearch = async (page = 1) => {
     if (!searchTerm.trim()) {
@@ -104,6 +123,7 @@ const JobSearch = () => {
                     placeholder="Job title, keywords, or company"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="pl-10"
                   />
                 </div>
@@ -115,6 +135,7 @@ const JobSearch = () => {
                     placeholder="Location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="pl-10"
                   />
                 </div>
@@ -125,10 +146,10 @@ const JobSearch = () => {
                     <SelectValue placeholder="Job Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="full-time">Full-time</SelectItem>
-                    <SelectItem value="part-time">Part-time</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                    <SelectItem value="remote">Remote</SelectItem>
+                    <SelectItem value="Full-time">Full-time</SelectItem>
+                    <SelectItem value="Part-time">Part-time</SelectItem>
+                    <SelectItem value="Contract">Contract</SelectItem>
+                    <SelectItem value="Remote">Remote</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -212,7 +233,7 @@ const JobSearch = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <h2 className="text-xl font-semibold">{jobs.length} Jobs Found</h2>
-                <Badge variant="secondary">{jobs.filter(j => j.type === "Remote").length} Remote</Badge>
+                <Badge variant="secondary">{jobs.filter(j => j.type?.toLowerCase() === "remote").length} Remote</Badge>
               </div>
               <Select defaultValue="relevance">
                 <SelectTrigger className="w-40">

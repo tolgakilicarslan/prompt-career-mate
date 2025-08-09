@@ -21,13 +21,18 @@ interface JobCardProps {
 }
 
 export function JobCard({ job, onSave, onApply, onViewDetails }: JobCardProps) {
-  const getStatusColor = (status?: string) => {
+  const getStatusVariant = (status?: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
-      case "applied": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-      case "interviewing": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-      case "rejected": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-      case "saved": return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
-      default: return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+      case "applied":
+        return "secondary"
+      case "interviewing":
+        return "default"
+      case "rejected":
+        return "destructive"
+      case "saved":
+        return "outline"
+      default:
+        return "secondary"
     }
   }
 
@@ -58,7 +63,7 @@ export function JobCard({ job, onSave, onApply, onViewDetails }: JobCardProps) {
             </div>
           </div>
           {job.status && (
-            <Badge className={getStatusColor(job.status)}>
+            <Badge variant={getStatusVariant(job.status)}>
               {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
             </Badge>
           )}
