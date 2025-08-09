@@ -55,18 +55,18 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
-      ? "bg-primary/10 text-primary font-medium border-r-2 border-primary" 
-      : "hover:bg-accent/50 text-foreground"
+      ? "bg-sidebar-accent text-sidebar-foreground font-medium border-r-2 border-primary" 
+      : "hover:bg-sidebar-accent text-sidebar-foreground/90"
 
   return (
     <Sidebar
       className={collapsed ? "w-16" : "w-64"}
       collapsible="icon"
     >
-      <SidebarContent className="bg-card">
+      <SidebarContent className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
         {/* Brand header */}
         {!collapsed && (
-          <div className="p-6 border-b border-border">
+          <div className="p-6 border-b border-sidebar-border bg-sidebar-accent">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[var(--gradient-primary)] rounded-lg flex items-center justify-center">
                 <Brain className="w-5 h-5 text-white" />

@@ -46,22 +46,15 @@ serve(async (req) => {
 
     console.log(`Searching for jobs: ${query} in ${location || 'any location'}`)
 
-    // In a real implementation, you would integrate with job APIs like:
-    // - Indeed API
-    // - LinkedIn API
-    // - Glassdoor API
-    // - RemoteOK API
-    // - AngelList API
-
-    // For now, we'll generate realistic mock data based on the search
-    const mockJobs: JobResult[] = generateMockJobs(query, location, jobType, page)
+    // Fetch real jobs from The Muse public API
+    const { jobs, total, hasMore } = await fetchMuseJobs({ query, location, jobType, page })
 
     return new Response(
       JSON.stringify({
-        jobs: mockJobs,
-        total: mockJobs.length,
+        jobs,
+        total,
         page,
-        hasMore: page < 3
+        hasMore
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

@@ -11,8 +11,8 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
 const JobSearch = () => {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [location, setLocation] = useState("")
+  const [searchTerm, setSearchTerm] = useState("Software")
+  const [location, setLocation] = useState("Toronto")
   const [jobType, setJobType] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [jobs, setJobs] = useState<any[]>([])
@@ -37,6 +37,12 @@ const JobSearch = () => {
       document.head.appendChild(link);
     }
     link.href = window.location.origin + "/job-search";
+
+    // Default to Toronto and auto-run initial search
+    setLocation((prev) => prev || "Toronto");
+    setSearchTerm((prev) => prev || "Software");
+    // Trigger initial search after first paint
+    setTimeout(() => handleSearch(1), 0);
   }, []);
 
   const handleSearch = async (page = 1) => {
@@ -97,8 +103,17 @@ const JobSearch = () => {
   }
 
   const handleViewDetails = (jobId: string) => {
-    console.log("Viewing job details:", jobId)
-    // Add view details logic
+    const job = jobs.find(j => j.id === jobId)
+    const url = job?.url || job?.applyUrl || job?.apply_url || job?.link
+    if (url) {
+      window.open(url, '_blank', 'noopener')
+    } else {
+      toast({
+        title: "No link available",
+        description: "This job doesn't include an external link.",
+        variant: "destructive"
+      })
+    }
   }
 
   return (

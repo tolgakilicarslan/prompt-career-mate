@@ -13,6 +13,7 @@ interface JobCardProps {
     type: string
     postedDate: string
     description: string
+    url?: string
     status?: "saved" | "applied" | "interviewing" | "rejected"
   }
   onSave?: (jobId: string) => void
